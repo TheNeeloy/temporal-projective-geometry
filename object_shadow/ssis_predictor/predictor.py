@@ -43,7 +43,7 @@ class VisualizationDemo(object):
         else:
             self.predictor = DefaultPredictor(cfg)
 
-    def run_on_image(self, image):
+    def run_on_image(self, image, draw_vis=False):
         """
         Args:
             image (np.ndarray): an image of shape (H, W, C) (in BGR order).
@@ -79,7 +79,8 @@ class VisualizationDemo(object):
                 instances.pred_boxes.tensor = instances.pred_boxes.tensor.numpy()
                 instances.scores = instances.scores.numpy()
 
-                vis_output = visualizer.draw_instance_predictions(predictions=instances)
+                if draw_vis:
+                    vis_output = visualizer.draw_instance_predictions(predictions=instances)
 
         return instances, vis_output
 
