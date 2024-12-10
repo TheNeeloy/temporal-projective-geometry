@@ -132,7 +132,6 @@ if __name__ == "__main__":
                 cv2.imwrite(shadow_save_path, shadows_mask.astype(np.uint8)*255)
                 object_save_path = os.path.join(object_save_dir, "{}.png".format(frame_id))
                 cv2.imwrite(object_save_path, objects_mask.astype(np.uint8)*255)
-                break
 
                 # Uncomment to save combined masks on original image
                 # visualized_output.save(os.path.join(vid_save_dir, "{}_visualized.png".format(frame_id)))
