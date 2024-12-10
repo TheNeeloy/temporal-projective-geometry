@@ -72,7 +72,7 @@ class VisualizationDemo(object):
             if "sem_seg" in predictions:
                 vis_output = visualizer.draw_sem_seg(
                     predictions["sem_seg"].argmax(dim=0).to(self.cpu_device))
-            if "instances" in predictions:
+            if "instances" in predictions and predictions["instances"]:
                 instances = predictions["instances"].to(self.cpu_device)
                 instances.pred_masks = instances.pred_masks.numpy()
                 instances.pred_classes = instances.pred_classes.numpy().tolist()

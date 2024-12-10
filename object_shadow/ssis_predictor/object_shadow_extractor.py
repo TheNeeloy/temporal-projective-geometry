@@ -77,7 +77,7 @@ if __name__ == "__main__":
     f = open(args.input, "r")
 
     # Iterate over video paths
-    for line in tqdm(f):
+    for line_num, line in enumerate(tqdm(f)):
 
         # Check if raw frames folder exists for current video
         vid_path = os.path.join(line.strip())
@@ -113,28 +113,31 @@ if __name__ == "__main__":
             # instances.pred_classes is a list of length num_predictions*2 with values 0 or 1
             # instances.pred_masks is a numpy array of shape (num_predictions*2, H, W)
 
-            # Combine predicted masks together
-            shadows_mask = np.zeros((instances.pred_masks.shape[1:]))   # (H, W)
-            objects_mask = np.zeros((instances.pred_masks.shape[1:]))   # (H, W)
-            for pred_mask, pred_class in zip(instances.pred_masks, instances.pred_classes):
-                if pred_class:
-                    shadows_mask = np.logical_or(shadows_mask, pred_mask)
-                else:
-                    objects_mask = np.logical_or(objects_mask, pred_mask)
+            # instances could be None
+            if instances:
 
-            # Image has valid predictions
-            if len(instances) > 0:
+                # Combine predicted masks together
+                shadows_mask = np.zeros((instances.pred_masks.shape[1:]))   # (H, W)
+                objects_mask = np.zeros((instances.pred_masks.shape[1:]))   # (H, W)
+                for pred_mask, pred_class in zip(instances.pred_masks, instances.pred_classes):
+                    if pred_class:
+                        shadows_mask = np.logical_or(shadows_mask, pred_mask)
+                    else:
+                        objects_mask = np.logical_or(objects_mask, pred_mask)
 
-                valid_mask_frame_ids["valid_ids"].append(frame_id)
+                # Image has valid predictions
+                if len(instances) > 0:
 
-                # Save masks
-                shadow_save_path = os.path.join(shadow_save_dir, "{}.png".format(frame_id))
-                cv2.imwrite(shadow_save_path, shadows_mask.astype(np.uint8)*255)
-                object_save_path = os.path.join(object_save_dir, "{}.png".format(frame_id))
-                cv2.imwrite(object_save_path, objects_mask.astype(np.uint8)*255)
+                    valid_mask_frame_ids["valid_ids"].append(frame_id)
 
-                # Uncomment to save combined masks on original image
-                # visualized_output.save(os.path.join(vid_save_dir, "{}_visualized.png".format(frame_id)))
+                    # Save masks
+                    shadow_save_path = os.path.join(shadow_save_dir, "{}.png".format(frame_id))
+                    cv2.imwrite(shadow_save_path, shadows_mask.astype(np.uint8)*255)
+                    object_save_path = os.path.join(object_save_dir, "{}.png".format(frame_id))
+                    cv2.imwrite(object_save_path, objects_mask.astype(np.uint8)*255)
+
+                    # Uncomment to save combined masks on original image
+                    # visualized_output.save(os.path.join(vid_save_dir, "{}_visualized.png".format(frame_id)))
 
             frame_id += 1
 
