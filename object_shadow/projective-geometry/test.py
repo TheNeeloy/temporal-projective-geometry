@@ -127,7 +127,7 @@ if __name__ == "__main__":
             if args.only_key_frames:
                 valid_frame_ids = []
                 for k in sorted(vid_key_frames_dict.keys()):
-                    key_frame = vid_key_frames_dict[k]
+                    key_frame = vid_key_frames_dict[k]["key_frame"]
                     if key_frame in vid_obj_shadow_valid_dict["valid_ids"]:
                         valid_frame_ids.append(key_frame)
                     for detail_frame in vid_key_frames_dict[k]["detail_frames"]:
