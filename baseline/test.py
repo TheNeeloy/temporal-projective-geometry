@@ -11,14 +11,15 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import roc_curve, auc
 import matplotlib.pyplot as plt
 import torchvision.transforms
-import numpy as np
+from PIL import Image
+import torch.nn as nn
 
-# Local imports
-from lines_model import load_model
+# Local Imports
+from prequalifier_model import Prequalifier, load_model
 
 
 def get_parser():
-    parser = argparse.ArgumentParser(description="Line Segments Hallucination Classifier")
+    parser = argparse.ArgumentParser(description="Baseline Hallucination Classifier")
     parser.add_argument(
         "--fake_input", 
         default="/home/neeloy/projects/cs445/final_project/temporal-projective-geometry/data/fake_video_paths.txt", 
@@ -35,18 +36,13 @@ def get_parser():
         help="Path to folder with jsons of key frames per video"
     )
     parser.add_argument(
-        "--lines", 
-        default="/home/neeloy/projects/cs445/final_project/temporal-projective-geometry/data/line_segments", 
-        help="Path to folder with line segments per video frame"
+        "--raw_frames", 
+        default="/home/neeloy/projects/cs445/final_project/temporal-projective-geometry/data/raw_frames", 
+        help="Path to folder with raw video frames"
     )
     parser.add_argument(
         '--only_key_frames', 
         action=argparse.BooleanOptionalAction,
-        help="Only perform inference on key frames"
-    )
-    parser.add_argument(
-        '--num_lines', type=int,
-        default=250,
         help="Only perform inference on key frames"
     )
     return parser
@@ -59,7 +55,7 @@ if __name__ == "__main__":
     assert os.path.isfile(args.fake_input)
     assert os.path.isfile(args.real_input)
     assert os.path.exists(args.key_frames)
-    assert os.path.exists(args.lines)
+    assert os.path.exists(args.raw_frames)
 
     # Create save folder
     sub_save_dir = os.path.join("results", "key_frames" if args.only_key_frames else "all")
@@ -71,7 +67,7 @@ if __name__ == "__main__":
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     # Load classification model
-    ckpt_path = os.path.join("checkpoints/Lines_combined.pt")
+    ckpt_path = os.path.join("checkpoints/Prequalifier_combined.pt")
     model = load_model(target_device=device, path_to_checkpoint=ckpt_path)
     model.eval()
 
@@ -92,7 +88,7 @@ if __name__ == "__main__":
             f = open(args.real_input, "r")
         curr_label_torch = torch.tensor([label], dtype=torch.int64, requires_grad=False).to(device)
 
-        sub_lines_dir = os.path.join(args.lines, "fake" if label else "real")
+        sub_raw_frames_dir = os.path.join(args.raw_frames, "fake" if label else "real")
         sub_key_frames_dir = os.path.join(args.key_frames, "fake" if label else "real")
 
         # Iterate over video paths
@@ -101,10 +97,8 @@ if __name__ == "__main__":
             # Check if necessary files exist for current video
             vid_path = os.path.join(line.strip())
             vid_file_name = (os.path.split(vid_path)[1]).split(".")[0]
-            vid_lines_path = os.path.join(sub_lines_dir, "{}.pkl".format(vid_file_name))
-            assert os.path.isfile(vid_lines_path)
-            with open(vid_lines_path, 'rb') as fp:
-                vid_lines_dict = pickle.load(fp)
+            vid_raw_frames_dir = os.path.join(sub_raw_frames_dir, vid_file_name)
+            assert os.path.exists(vid_raw_frames_dir)
             vid_key_frames = os.path.join(sub_key_frames_dir, "{}.json".format(vid_file_name))
             assert os.path.isfile(vid_key_frames)
             with open(vid_key_frames, 'r') as fp:
@@ -122,37 +116,35 @@ if __name__ == "__main__":
                     for detail_frame in vid_key_frames_dict[k]["detail_frames"]:
                         valid_frame_ids.append(detail_frame)
             else:
-                valid_frame_ids = vid_lines_dict.keys()
+                num_frames = len([name for name in os.listdir(vid_raw_frames_dir) if os.path.isfile(os.path.join(vid_raw_frames_dir, name))])
+                valid_frame_ids = [i for i in range(num_frames)]
 
             # Predict anomaly scores per frame
             for frame_id in valid_frame_ids:
 
-                flattened_lines = vid_lines_dict[frame_id]  # (num_lines, 4), np array
+                curr_raw_frame_filepath = os.path.join(vid_raw_frames_dir, "{}.png".format(frame_id))
 
-                # Sample more points or cut some points out
-                line_disparity = args.num_lines - flattened_lines.shape[0] 
-                if line_disparity > 0:
-                    # Duplicate points
-                    sampling_indices = np.random.choice(flattened_lines.shape[0], line_disparity)
-                    new_points = flattened_lines[sampling_indices, :]
-                    flattened_lines = np.concatenate((flattened_lines, new_points),axis=0)
-                else:
-                    sampling_indices = np.random.choice(flattened_lines.shape[0], args.num_lines)
-                    flattened_lines = flattened_lines[sampling_indices, :]
-                
-                flattened_lines = torch.tensor(flattened_lines).unsqueeze(0).to(device) # (1, num_lines_sampled, 4)
+                image = Image.open(curr_raw_frame_filepath).convert('RGB')
+                image = torchvision.transforms.Resize((256, 256))(image)
+                image = torchvision.transforms.CenterCrop(224)(image)
+                image = torchvision.transforms.ToTensor()(image)
+                image = torchvision.transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])(image)   
+                image = image.float().unsqueeze(0).to(device)   # (1, 3, 224, 224)
 
                 with torch.no_grad():
 
-                    outputs = model(flattened_lines)    # (1, 2), scores for normal and abnormal
-                    _, predicted = torch.max(outputs.data, 1)
+                    predictions = model(image)
+                    probabilities = nn.Softmax(dim = 1)(predictions)
+                    generated_probabilities = probabilities[:, 1]
+                    predicted_labels = torch.argmax(predictions, dim = 1)
+                
                     total += 1
-                    correct += (predicted == curr_label_torch).sum().item()
-                    all_predicted = torch.cat((all_predicted, predicted))
+                    correct += (predicted_labels == curr_label_torch).sum().item()
+                    all_predicted = torch.cat((all_predicted, predicted_labels))
                     all_labels = torch.cat((all_labels, curr_label_torch))
-                    all_pred_probs = torch.cat((all_pred_probs, outputs.data))
-                    curr_anom_pred_prob = outputs[:,1].cpu().item()
-                    curr_pred = predicted.cpu().item()
+                    all_pred_probs = torch.cat((all_pred_probs, probabilities))
+                    curr_anom_pred_prob = generated_probabilities.cpu().item()
+                    curr_pred = predicted_labels.cpu().item()
 
                     predictions_dict["fake" if label else "real"][vid_file_name]["frame_ids"].append(frame_id)
                     predictions_dict["fake" if label else "real"][vid_file_name]["probs"].append(curr_anom_pred_prob)
