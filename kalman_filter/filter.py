@@ -8,6 +8,7 @@ import json
 import numpy as np
 from tqdm import tqdm
 from scipy.stats import multivariate_normal
+from scipy.signal import butter, lfilter
 
 
 def get_parser():
@@ -52,6 +53,11 @@ def get_parser():
         action=argparse.BooleanOptionalAction,
         help="Only compile results for key frames"
     )
+    parser.add_argument(
+        '--smooth', 
+        action=argparse.BooleanOptionalAction,
+        help="Smooth each models' predictions before applying kalman filter"
+    )
     return parser
 
 if __name__ == "__main__":
@@ -77,6 +83,9 @@ if __name__ == "__main__":
     with open(line_pkl_path, 'rb') as fp:
         line_dict = pickle.load(fp)
 
+    # Filter to smooth predictions
+    b, a = butter(2, 0.2, fs=10)
+
     # Calculate normalization factors for raw probs output by models 
     model_names = ["obj_shadow", "perspective", "lines"]
     norm_dict = {}
@@ -85,18 +94,27 @@ if __name__ == "__main__":
     for label in obj_shadow_dict:
         for video_name in obj_shadow_dict[label]:
             probs = obj_shadow_dict[label][video_name]["probs"]
+            if args.smooth:
+                probs_smooth = lfilter(b, a, probs)
+                obj_shadow_dict[label][video_name]["probs"] = probs_smooth
             if probs:
                 norm_dict["obj_shadow"]["min"] = min(norm_dict["obj_shadow"]["min"], np.min(probs))
                 norm_dict["obj_shadow"]["max"] = max(norm_dict["obj_shadow"]["max"], np.max(probs))
     for label in perspective_dict:
         for video_name in perspective_dict[label]:
             probs = perspective_dict[label][video_name]["probs"]
+            if args.smooth:
+                probs_smooth = lfilter(b, a, probs)
+                perspective_dict[label][video_name]["probs"] = probs_smooth
             if probs:
                 norm_dict["perspective"]["min"] = min(norm_dict["perspective"]["min"], np.min(probs))
                 norm_dict["perspective"]["max"] = max(norm_dict["perspective"]["max"], np.max(probs))
     for label in line_dict:
         for video_name in line_dict[label]:
             probs = line_dict[label][video_name]["probs"]
+            if args.smooth:
+                probs_smooth = lfilter(b, a, probs)
+                line_dict[label][video_name]["probs"] = probs_smooth
             if probs:
                 norm_dict["lines"]["min"] = min(norm_dict["lines"]["min"], np.min(probs))
                 norm_dict["lines"]["max"] = max(norm_dict["lines"]["max"], np.max(probs))
@@ -172,7 +190,7 @@ if __name__ == "__main__":
 
             # Measurement update step
             r_mu = 0.   # observation noise mean
-            r_cov = 0.1 # observation noise variance
+            r_cov = 1.  # observation noise variance
 
             # Estimate initializations
             x_pred, x_prob, x_prob_norm = np.zeros((4,1)), np.zeros((4,1)), np.zeros((4,1))             # state estimate
