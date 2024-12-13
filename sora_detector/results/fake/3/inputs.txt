@@ -1,0 +1,45 @@
+Original Prompt:
+----------------
+Archeologists discover a generic plastic chair in the desert, excavating and dusting it with great care.
+
+Static Knowledge Graphs:
+------------------------
+Key Frame 0:
+{{"objects": ["chair_1", "person_1", "person_2", "person_3"], "relations":[["chair_1", "is being held by", "person_1"], ["chair_1", "is being held by", "person_2"], ["chair_1", "is being held by", "person_3"]]}}
+Key Frame 1:
+{{"objects": ["chair", "person_1", "person_2", "person_3", "shovel_1", "shovel_2", "sand"], "relations":[["person_1", "using", "shovel_1"], ["person_2", "using", "shovel_2"], ["shovel_1", "moving", "sand"], ["shovel_2", "moving", "sand"], ["chair", "on", "sand"]]}}
+Key Frame 2:
+{{"objects": ["chair_1", "person_1", "person_2", "person_3", "sand"], "relations":[["person_1", "holding", "sand"], ["person_2", "holding", "sand"], ["person_3", "holding", "sand"], ["chair_1", "next to", "sand"]]}}
+Key Frame 3:
+{{"objects": ["chair_1", "person_1", "person_2", "person_3", "bag_1"], "relations":[["person_1", "holding", "bag_1"], ["person_2", "holding", "bag_1"], ["bag_1", "above", "ground"], ["chair_1", "on", "ground"]]}}
+Key Frame 4:
+{{"objects": [chair_1, person_1, person_2, person_3, person_4, person_5], "relations":[[person_1, holding, chair_1], [person_2, holding, chair_1], [person_3, standing_near, person_4], [person_4, standing_near, person_5]]}}
+Key Frame 5:
+{{"objects": ["chair", "person_1", "person_2", "person_3", "person_4", "camera"], "relations":[["person_1", "holding", "chair"], ["person_2", "holding", "camera"], ["person_3", "standing_near", "chair"], ["person_4", "standing_near", "chair"]]}}
+Key Frame 6:
+{{"objects": ["person_1", "person_2", "person_3", "person_4", "plastic_chair", "metal_detector_1", "metal_detector_2", "metal_detector_3"], "relations":[["person_1", "holding", "metal_detector_1"], ["person_2", "holding", "metal_detector_2"], ["person_3", "holding", "metal_detector_3"], ["person_4", "near", "plastic_chair"], ["plastic_chair", "on", "ground"]]}}
+Key Frame 7:
+{{"objects": ["person_1", "person_2", "person_3", "robot_dog"], "relations":[["person_1", "near", "robot_dog"], ["person_2", "near", "robot_dog"], ["person_3", "near", "robot_dog"]]}}
+Key Frame 8:
+{{"objects": ["person_1", "person_2", "person_3", "chair"], "relations":[["person_1", "next to", "chair"], ["person_2", "next to", "chair"], ["person_3", "next to", "chair"]]}}
+Key Frame 9:
+{{"objects": [person_1, person_2, person_3, large rock], "relations":[[person_1, near, large rock], [person_2, near, large rock], [person_3, near, large rock]]}}
+
+Dynamic Knowledge Graphs:
+-------------------------
+Cluster 0:
+{{"changes": { "chair_1": "unchanged", "person_1": "change - moving sand", "person_2": "change - moving sand", "person_3": "change - moving sand"}}}
+Cluster 3:
+{{"changes": { "chair_1": "unchanged", "person_1": "unchanged", "person_2": "unchanged", "person_3": "unchanged", "bag_1": "unchanged" }}}
+Cluster 4:
+{{"changes":{{"chair_1": "moved from being held to placed on ground", "person_1": "stopped holding chair", "person_2": "shoveled sand and stopped holding chair", "person_3": "unchanged", "person_4": "unchanged", "person_5": "unchanged"}}}}
+Cluster 5:
+{{"changes":{{"chair": "unchanged", "person_1": "unchanged", "person_2": "unchanged", "person_3": "unchanged", "person_4": "unchanged", "camera": "unchanged"}}}}
+Cluster 6:
+{"changes":{"plastic_chair": "changed (tilted and broke)", "person_1": "unchanged", "person_2": "unchanged", "person_3": "unchanged", "person_4": "unchanged", "metal_detector_1": "unchanged", "metal_detector_2": "unchanged", "metal_detector_3": "unchanged"}}
+Cluster 7:
+{{"changes":{{"person_1": "unchanged", "person_2": "unchanged", "person_3": "unchanged", "robot_dog": "unchanged"}}}}
+
+Generated Video Description:
+----------------------------
+The video depicts a sequence where a group of people is interacting with a plastic chair in a sandy environment. Initially, several individuals are seen moving sand around the chair. As the video progresses, they stop moving the sand and place the chair on the ground. The group then examines the area using metal detectors. Eventually, the chair is tilted and breaks, while the individuals continue their activities with metal detectors and a robot dog nearby.

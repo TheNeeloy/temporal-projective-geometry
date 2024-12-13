@@ -1,0 +1,120 @@
+===================================
+Static Knowledge Graph Construction
+===================================
+
+Input:
+------
+1. A key frame
+
+Prompt:
+-------
+The following is a frame from a video. Perform the following actions:
+- Identify objects in the foreground of the frame and output a list. If a type of object appears repeatedly, list them all in the form of A_1, A_2 and so on.
+- Identify the relations between objects in the last step and output a list in the format [ENTITY 1, RELATION, ENTITY 2]
+- Convert the result above strictly adhering to the following structure in one line:{{"objects": [ojbect_1, object_2, xxx], "relations":[[ENTITY 1, RELATION, ENTITY 2], [ENTITY 1, RELATION, ENTITY 2],xxx]}}
+
+====================================
+Dynamic Knowledge Graph Construction
+====================================
+
+Input:
+------
+1. All frames within a key frame cluster
+2. The static knowledge graph of key frame from cluster set as <relation>
+
+Prompt:
+-------
+The following are frames in chronological order from a video, which may violate the physical laws and logic of the real world. The first frame is the earliest. Based on the images as well as the objects and relations between objects in the frame as hint, perform the following actions:
+- Identify the changes or consistencies of the identified input "objects" across provided frames, describing any transformation, motion, or alteration in state as well as object's position. If an object remains unchanged, indicate its consistency throughout the frames. The detailed steps are as follows:
+- Identify the objects changes from first frame to second frame and then from second frame to third frame and so on.
+- Summarize the objects changes from first frame to second frame and then from second frame to third frame and so on.... and output the overall changes across all frames.
+- Output in the format {{"object_1": "change/unchanged", "object_2": "change/unchanged"}}
+- Convert the result above strictly adhering to the following structure in one line:{{"changes":{{"object_1": "how overall changes or unchanged", "object_2": "how overall changes or unchanged",xxx}}}}
+Relations:<relation>
+
+=============
+Video Summary
+=============
+
+Input:
+------
+1. All key frames
+2. All dynamic knowledge graphs set as <changes>
+
+Prompt:
+-------
+The following are a set of key frames in chronological order from a video, which depicts the whole video from start to end.
+Based on the key frames above and the object changes for all key frame from dynamic knowledge graph extraction, generate a brief and accurate description for the video.
+The objects changes for all key frames:<changes>
+
+======================
+Inconsistency Checking
+======================
+
+Input:
+------
+1. All key frames
+2. Original prompt set as <original_prompt>
+3. AI-generated prompt set as <generated_prompt>
+
+Prompt:
+-------
+The following are a set of key frames in chronological order from a video, which depicts the whole video from start to end.
+Given a description of the video from a human, and a generated description of the video from AI, compare the inconsistency in the two descriptions and give a score representing the intensity for inconsistency. The higher the score, the more severe the inconsistency is, with a maximum score of 10 points.
+Human Description:<original_prompt>
+AI-generated Description:<generated_prompt>
+
+==============================
+Static Hallucination Detection
+==============================
+
+Input:
+------
+1. A key frame
+2. Original prompt set as <original_prompt>
+3. The static knowledge graph of key frame set as <relation>
+
+Prompt:
+-------
+The following is a frame from a video, which depicts "<original_prompt>". Based on the frame image, perform the following actions:
+- First I will give the definition of all types of static hallucinations: 
+  1. Geometric structure irrationality: Objects' shapes, proportions, and topologies are inconsistent with real-world common sense, showing irrational deformations, omissions, redundancies, discontinuities, or inconsistencies.
+  2. Biological structure irrationality: Biological organs' structures defy real-world common sense, presenting illogical deformations, omissions, redundancies, discontinuities, or inconsistencies.
+  3. Lighting, shadow, and material physical inaccuracy: The direction, intensity, color of lighting, shape of shadows, and surface material properties in images contradict physical laws and don't match the objects' position, environmental conditions, or the physical properties of materials in the real world.
+  4. Color distribution disharmony: Color distribution and combinations in images don't follow natural statistical laws, showing unrealistic, disharmonious, or abnormal color combinations.
+  5. Depth of field and focal length unreality: The depth of field and perspective relationships in images defy physical laws and photography principles, contradicting the spatial positioning of objects.
+  6. Object composition and scene semantic inconsistency: The arrangement of objects and scene settings in images violate common sense logic, semantic constraints, and scenario-specific norms, featuring irrational, contradictory, rare, or impossible combinations and setups.
+  7. Motion and blur inconsistency: The direction, extent, and trajectory of motion blur in images contradict the motion state and speed of moving objects, presenting irrational or contradictory motion blur effects.
+  8. Physical phenomenon inauthenticity: Various physical phenomena in images, like reflection and refraction, defy physical laws, conflicting with the materials, shapes, positions, and environmental conditions of objects.
+  9. Image quality inconsistency: The overall and local quality of images, like resolution, is inconsistent, showing noticeable quality differences or traces of post-processing.
+  10. Other hallucination: all other implausible phenomenons except mentioned above that violate the physical laws and logic of the real world.
+- For all objects identified in the video, given the relation between them, detect one by one whether the hallucinations listed above occur in the given frame and give a score representing the intensity for each hallucination. The higher the score, the more severe the hallucinations are, with a maximum score of 10 points.
+Relations:<relation>
+
+===============================
+Dynamic Hallucination Detection
+===============================
+
+Input:
+------
+1. All frames within a key frame cluster
+2. Original prompt set as <original_prompt>
+3. The static knowledge graph of key frame set as <relation>
+4. The dynamic knowledge graph of the key frame cluster set as <change>
+
+Prompt:
+-------
+The following are several frames in chronological order from a video, which depicts "<original_prompt>". The first frame is the earliest. Based on the images, perform the following actions:
+- First I will give the the definition of all type of dynamic hallucinations: 
+  1. Clipping: Unnatural overlapping and intersection that the boundaries of object models do not correspond to their actual physical relationships.
+  2. Implausible fusion: Implausible/Unnatural fusion between objects, such as two objects gradually become one object when interacting.
+  3. Implausible appearance or disappearance: The sudden appearance or disappearance of an object without reasonable physical interaction.
+  4. Implausible motion: The unnatural movement of an object, such as movement without support.
+  5. Implausible transform: Objects undergo unnatural deformation, such as when a solid suddenly turns into a fluid.
+  6. Implausible penetration: The unnatural penetration of an object through another object in an interaction.
+  7. Physical interaction errors: An interaction that should have occurred did not occur, or an interaction that should not have occurred did.
+  8. Logical interaction error: Timing error/Timing reversal.
+  9. Other hallucination: all other implausible phenomenons except mentioned above that violate the physical laws and logic of the real world.
+- For all identified objects, given the relation between them and their changes across frames, detect one by one whether the hallucinations listed above occurs in the given frames and give a score representing the intensity for each hallucination. The higher the score, the more severe the hallucinations are, with a maximum score of 10 points.
+The objects and relations between objects:<relation>
+The objects' changes across all frames:<change>
