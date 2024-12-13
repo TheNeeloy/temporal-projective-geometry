@@ -38,6 +38,11 @@ def get_parser():
         help="Path to folder with baseline anomaly classification model results"
     )
     parser.add_argument(
+        "--kalman_results", 
+        default="/home/neeloy/projects/cs445/final_project/temporal-projective-geometry/kalman_filter/results", 
+        help="Path to folder with combined kalman filtered anomaly classification model results"
+    )
+    parser.add_argument(
         '--only_key_frames', 
         action=argparse.BooleanOptionalAction,
         help="Only compile results for key frames"
@@ -58,6 +63,8 @@ if __name__ == "__main__":
     assert os.path.isfile(perspective_pkl_path)
     line_pkl_path = os.path.join(args.line_results, high_split, "per_vid_results.pkl")
     assert os.path.isfile(line_pkl_path)
+    kalman_pkl_path = os.path.join(args.kalman_results, high_split, "per_vid_results.pkl")
+    assert os.path.isfile(kalman_pkl_path)
     splits_json_path = os.path.join(args.splits, "{}.json".format("key_frames" if args.only_key_frames else "all"))
     assert os.path.isfile(splits_json_path)
 
@@ -70,6 +77,8 @@ if __name__ == "__main__":
         perspective_dict = pickle.load(fp)
     with open(line_pkl_path, 'rb') as fp:
         line_dict = pickle.load(fp)
+    with open(kalman_pkl_path, 'rb') as fp:
+        kalman_dict = pickle.load(fp)
     with open(splits_json_path, 'r') as fp:
         splits_dict = json.load(fp)
 
@@ -88,6 +97,16 @@ if __name__ == "__main__":
             results_dict[split_name][model_name] = {}
             results_dict[split_name][model_name]["labels"] = []
             results_dict[split_name][model_name]["prob"] = []
+
+    # Dict to store labels and predictions per kalman model per split
+    kalman_results_dict = {}
+    kalman_model_names = ["probs", "norm_probs", "pred"]
+    for split_name in split_names:
+        kalman_results_dict[split_name] = {}
+        for model_name in kalman_model_names:
+            kalman_results_dict[split_name][model_name] = {}
+            kalman_results_dict[split_name][model_name]["labels"] = []
+            kalman_results_dict[split_name][model_name]["prob"] = []
 
     # Iterate over real and fake types
     for label in splits_dict:
@@ -128,9 +147,30 @@ if __name__ == "__main__":
                 results_dict["complete"]["lines"]["prob"].extend(line_predictions)
                 results_dict["complete"]["lines"]["labels"].extend(line_labels)
 
+                kalman_predictions_prob = kalman_dict[label][video_name]["probs"]
+                kalman_predictions_prob_norm = kalman_dict[label][video_name]["norm_probs"]
+                kalman_predictions_pred = kalman_dict[label][video_name]["pred"]
+                kalman_labels = [curr_label for _ in kalman_predictions_prob]
+                kalman_results_dict[split_difficulty]["probs"]["prob"].extend(kalman_predictions_prob)
+                kalman_results_dict[split_difficulty]["norm_probs"]["prob"].extend(kalman_predictions_prob_norm)
+                kalman_results_dict[split_difficulty]["pred"]["prob"].extend(kalman_predictions_pred)
+                kalman_results_dict[split_difficulty]["probs"]["labels"].extend(kalman_labels)
+                kalman_results_dict[split_difficulty]["norm_probs"]["labels"].extend(kalman_labels)
+                kalman_results_dict[split_difficulty]["pred"]["labels"].extend(kalman_labels)
+                kalman_results_dict["complete"]["probs"]["prob"].extend(kalman_predictions_prob)
+                kalman_results_dict["complete"]["norm_probs"]["prob"].extend(kalman_predictions_prob_norm)
+                kalman_results_dict["complete"]["pred"]["prob"].extend(kalman_predictions_pred)
+                kalman_results_dict["complete"]["probs"]["labels"].extend(kalman_labels)
+                kalman_results_dict["complete"]["norm_probs"]["labels"].extend(kalman_labels)
+                kalman_results_dict["complete"]["pred"]["labels"].extend(kalman_labels)
+
     # Save compiled results
     with open(os.path.join(sub_save_dir, "compiled.json"), "w") as fp: 
         json.dump(results_dict, fp, indent=4)
+
+    # Save kalman compiled results
+    with open(os.path.join(sub_save_dir, "kalman_compiled.json"), "w") as fp: 
+        json.dump(kalman_results_dict, fp, indent=4)
 
     # Create ROC plots
     for split_name in results_dict:
@@ -159,3 +199,31 @@ if __name__ == "__main__":
         plt.title("ROC on {} Split".format(split_name))
         plt.legend(loc="lower right")
         plt.savefig(os.path.join(sub_save_dir, "{}_split_roc.png".format(split_name)), dpi=300)
+
+    # Create kalman ROC plots
+    for split_name in kalman_results_dict:
+
+        plt.figure()
+        lw = 2
+
+        for model_name in kalman_results_dict[split_name]:
+
+            prob = kalman_results_dict[split_name][model_name]["prob"]
+            labels = kalman_results_dict[split_name][model_name]["labels"]
+
+            # Compute ROC curve and ROC area for each class
+            fpr, tpr, _ = roc_curve(labels, prob)
+            roc_auc = auc(fpr, tpr)
+
+            # Plotting the ROC curve
+            area_formatted = "{0:.2f}".format(roc_auc)
+            plt.plot(fpr, tpr, lw=lw, label="{} (area = {})".format(model_name, area_formatted))
+
+        plt.plot([0, 1], [0, 1], color='navy', lw=lw, linestyle='--')
+        plt.xlim([0.0, 1.0])
+        plt.ylim([0.0, 1.05])
+        plt.xlabel('False Positive Rate')
+        plt.ylabel('True Positive Rate')
+        plt.title("ROC on {} Split".format(split_name))
+        plt.legend(loc="lower right")
+        plt.savefig(os.path.join(sub_save_dir, "kalman_{}_split_roc.png".format(split_name)), dpi=300)
