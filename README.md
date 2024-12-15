@@ -1,5 +1,7 @@
 # Project Code for *An Exploration Into AI-Generated Video Hallucination Detection*
 
+**Note:** This repository is the code for my final project for UIUC CS 445 Fall 2024.
+
 ## Abstract
 
 Recent generative models like Sora have shown promise in producing high quality images and videos given text input, but they can also hallucinate inconsistent, undesirable, and irrelevant features. 
@@ -36,6 +38,11 @@ Look inside each sub-folder to see how to run that part of the project.
 └───sora_detector - Folder with prompts used for Sora Detector, and output predictions from GPT-4o using Perplexity
 ```
 
+## Video Data Sources
+We extract 59 AI-generated videos from the `T2VHaluBench` dataset and 59 real videos from the `BDD100K` dataset. 
+- All 59 `T2VHaluBench` videos can be found at https://github.com/TruthAI-Lab/SoraDetector/tree/main/text-to-video%20benchmark/text-to-video
+- We downloaded `bdd100k_videos_test_00.zip` found under `BDD100K` → `Video Parts` at http://bdd-data.berkeley.edu/download.html. Then we chose 59 videos from that set, which are listed in `./data/real_video_paths.txt`.
+
 ## Conda Environment
 We use conda to manage packages for running different parts of the project. Unless otherwise stated, we run our code with the `projective-geometry` environment. Install the environment with `conda env create -f projective_geometry.yml`.
 
@@ -51,3 +58,12 @@ We use conda to manage packages for running different parts of the project. Unle
 9. Follow directions in `./baseline` to run baseline classifier
 10. Follow directions in `./results_extractor` to extract difficulty-based test splits, and compile results
 11. **Optional:** Prompt GPT-4o with Sora Detector prompts provided in `./sora_detector/prompts.txt` and/or look at our case study raw results in `./sora_detector/results`
+
+## References
+We thank the authors of the following projects for making their data/code/models available:
+- https://github.com/TruthAI-Lab/SoraDetector
+- http://bdd-data.berkeley.edu/index.html
+- https://github.com/hanlinm2/projective-geometry
+- https://github.com/stevewongv/SSIS
+- https://github.com/jinlinyi/PerspectiveFields
+- https://github.com/cvg/DeepLSD
